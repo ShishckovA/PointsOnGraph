@@ -8,13 +8,15 @@ import itertools
 def count_points(g: Graph, T=50000):
     t = 0
     ns = 0
+    prev_ln = len(g.get_points())
     while t < T:
+        prev_ln = len(g.get_points())
         t += g.tick()
         ns += 1
         if ns % 1000 == 0:
             print(t)
             print(len(g.get_points()))
-    return len(g.get_points())
+    return prev_ln
 
 def prod(arr):
     x = 1
@@ -74,8 +76,8 @@ def build_tri_with_tail(t1, t2, t3, t4, t5):
     g.add_vertex(E)
 
     e1 = Edge(A, B, t1)
-    e2 = Edge(B, C, t2)
-    e3 = Edge(C, A, t3)
+    e2 = Edge(C, A, t2)
+    e3 = Edge(B, C, t3)
     e4 = Edge(A, D, t4)
     e5 = Edge(D, E, t5)
 
@@ -155,7 +157,7 @@ def build_tri(t1, t2, t3, *args):
 
     return g
 
-N = 100
+N = 10
 t1 = sqrt(1) * N
 t2 = sqrt(2) * N
 t3 = sqrt(3) * N
@@ -163,8 +165,8 @@ t4 = sqrt(5) * N
 t5 = sqrt(7) * N
 ts = [t1, t2, t3, t4, t5]
 
-T = 80000000
-g = build(t1, t2, t3, t4, t5)
+T = 500
+g = build_tri_with_tail(t1, t2, t3, t4, t5)
 true_n = count_points(g, T)
 print(true_n)
 # poly_n = T ** 4 / 192  * sum(ts) / prod(ts)

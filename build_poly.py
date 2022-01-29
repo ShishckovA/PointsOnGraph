@@ -13,15 +13,15 @@ import sympy
 from symplex_counting.todd import build_rk
 
 # multiedge
-n, m = 2, 4
-g = Graph()
-ts = [sympy.Symbol(f"t_{i}") for i in range(m)]
-T = sympy.Symbol("T")
-g.add_edge(Edge(0, 1, ts[0]))
-g.add_edge(Edge(0, 1, ts[1]))
-g.add_edge(Edge(0, 1, ts[2]))
-g.add_edge(Edge(0, 1, ts[3]))
-print(g)
+# n, m = 2, 4
+# g = Graph()
+# ts = [sympy.Symbol(f"t_{i}") for i in range(m)]
+# T = sympy.Symbol("T")
+# g.add_edge(Edge(0, 1, ts[0]))
+# g.add_edge(Edge(0, 1, ts[1]))
+# g.add_edge(Edge(0, 1, ts[2]))
+# g.add_edge(Edge(0, 1, ts[3]))
+# print(g)
 
 # bamboo-2
 # n, m = 3, 2
@@ -33,16 +33,16 @@ print(g)
 # print(g)
 
 # tail-tri
-# n, m = 5, 5
-# g = Graph()
-# ts = [sympy.Symbol(f"t_{i}") for i in range(m)]
-# T = sympy.Symbol("T")
-# g.add_edge(Edge(0, 1, ts[0]))
-# g.add_edge(Edge(1, 2, ts[1]))
-# g.add_edge(Edge(2, 0, ts[2]))
-# g.add_edge(Edge(0, 3, ts[3]))
-# g.add_edge(Edge(3, 4, ts[4]))
-# print(g)
+n, m = 5, 5
+g = Graph()
+ts = [sympy.Symbol(f"t_{i}") for i in range(1, m + 1)]
+T = sympy.Symbol("T")
+g.add_edge(Edge(0, 1, ts[0]))
+g.add_edge(Edge(2, 0, ts[1]))
+g.add_edge(Edge(1, 2, ts[2]))
+g.add_edge(Edge(0, 3, ts[3]))
+g.add_edge(Edge(3, 4, ts[4]))
+print(g)
 
 # tri
 # n, m = 3, 3
@@ -139,7 +139,7 @@ for elem in all_routes(g, 0, 1):
 
 s = 0
 l = sympy.Symbol("lambda")
-ws = [sympy.Symbol(f"w_{i}") for i in range(m + 1)]
+ws = [sympy.Symbol(f"w_{i}") for i in range(1, m + 2)]
 Rks = [build_rk(i, l, ws[:i]) for i in range(m + 1)]
 
 
@@ -188,10 +188,6 @@ for sub_g in get_all_subg(g, s):
         res1 += (len(g.g[v]) - len(sub_g.g[v])) * res2
     R1 += res1
 
-
-# In[8]:
-
-
 R2 = sympy.S.Zero
 for sub_g in get_all_subg(g, s):
     res3 = sympy.S.Zero
@@ -208,7 +204,7 @@ for sub_g in get_all_subg(g, s):
     R2 += res3
 
 
-# In[9]:
+# In[8]:
 
 
 R1 = sympy.simplify(R1)
@@ -217,16 +213,16 @@ N = sympy.simplify(sympy.Poly(R1, T) + sympy.Poly(R2, T))
 N
 
 
+# In[9]:
+
+
+# display(sympy.simplify(sympy.Poly(R1, T)), sympy.simplify(sympy.Poly(R2, T)))
+
+
 # In[10]:
 
 
-display(sympy.simplify(sympy.Poly(R1, T)), sympy.simplify(sympy.Poly(R2, T)))
-
-
-# In[15]:
-
-
-k = 100
+k = 10
 t1 = sympy.S.One * k
 t2 = sympy.sqrt(2) * k
 t3 = sympy.sqrt(3) * k
@@ -235,21 +231,67 @@ t5 = sympy.sqrt(7) * k
 
 tvals = [t1, t2, t3, t4, t5]
 
-Tc = 5151.278789672293
+Tc = 500
 
 
-# In[16]:
+# In[11]:
 
 
 N.subs([
     (T, Tc)
-]).subs(zip(ts, tvals)).evalf() # 30294.5256041644, 30299 is correct
+]).subs(zip(ts, tvals)).evalf()
 
 
-# In[ ]:
+# In[12]:
 
 
+print(sympy.latex(N))
 
+
+# In[13]:
+
+
+R1_p = sympy.S.Zero
+for sub_g in get_all_subg(g, s):
+    ts2 = [edges[0].t * 2 for eid, edges in sub_g.edges.items()]
+    Rk = Rks[len(ts2)].subs([(w, t2) for w, t2 in zip(ws, ts2)])
+    res1 = sympy.S.Zero
+    for v in sub_g.g:
+        res2 = sympy.S.Zero
+        for cs in all_routes(sub_g, s, v):
+            res2 += Rk.subs([(l, T + sum(c * edge.t for edge, c in cs if c == 1))])
+        res1 += (len(g.g[v]) - len(sub_g.g[v])) * res2
+    R1_p += res1
+
+
+R2_p = sympy.S.Zero
+for sub_g in get_all_subg(g, s):
+    res3 = sympy.S.Zero
+    for v in sub_g.g:
+        ism = get_isthmus(sub_g, s, v)
+        if ism is None:
+            continue
+        ts2 = [edges[0].t * 2 for eid, edges in sub_g.edges.items() if eid != ism.eid]
+        Rk = Rks[len(ts2)].subs([(w, t2) for w, t2 in zip(ws, ts2)])
+        res4 = sympy.S.Zero
+        for cs in all_routes(sub_g, s, v):
+            res4 += Rk.subs([(l,  T + sum(c * edge.t for edge, c in cs if edge.eid != ism.eid and c == 1) - ism.t)])
+        res3 += res4
+    R2_p += res3
+
+R1_p = sympy.simplify(R1_p)
+R2_p = sympy.simplify(R2_p)
+N_p = sympy.Poly(sympy.simplify(R1_p + R2_p), T)
+
+N_p.subs([
+    (T, Tc)
+]).subs(zip(ts, tvals)).evalf()
+
+
+# In[14]:
+
+
+display(N_p)
 
 
 # In[ ]:
