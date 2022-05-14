@@ -1,0 +1,9 @@
+altgraph==0.17.2
+mpmath==1.2.1
+networkx==2.8
+pyinstaller==5.0.1
+pyinstaller-hooks-contrib==2022.4
+PyQt5==5.15.6
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.10.1
+sympy==1.10.1
