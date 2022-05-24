@@ -3,7 +3,7 @@ import sympy as sym
 
 
 def td(s, ws):
-    z = sym.Symbol("z") 
+    z = sym.Symbol("z")
     formula = sym.S.One
     for wi in ws:
         formula *= wi * z / (1 - sym.exp(-wi * z))

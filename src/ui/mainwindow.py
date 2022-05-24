@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional, Callable
+from typing import Optional
 
-from PyQt5.QtCore import Qt, QPoint, QThread
+from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QColor, QPen, QBrush, QPainter, QMouseEvent
 from PyQt5.QtWidgets import (
     QMainWindow,
@@ -12,15 +12,54 @@ from PyQt5.QtWidgets import (
     QAction,
     QFrame,
     QDialog,
-    QDialogButtonBox,
+    QFileDialog,
     QVBoxLayout,
     QLabel,
     QLineEdit,
-    QFileDialog, QTextEdit, QPushButton,
+    QDialogButtonBox,
 )
 
-from backend import pc_polynomial
 from backend import graph_utils
+from ui.polynomial_show import PolynomialShowWindow
+from ui.utils import Node, Edge
+
+
+class ChangeNodeIdDialog(QDialog):
+    def __init__(self, parent, node_name):
+        super().__init__(parent)
+
+        self.setWindowTitle("Изменить номер вершины")
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Enter new node id:"))
+        line_edit = QLineEdit()
+        if node_name is not None:
+            line_edit.setText(str(node_name))
+
+        layout.addWidget(line_edit)
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        line_edit.returnPressed.connect(self.accept)
+
+        self.setModal(True)
+
+        self.line_edit = line_edit
+
+    def accept(self):
+        self.done(QDialog.Accepted)
+
+    def reject(self):
+        self.done(QDialog.Rejected)
+
+    def get_node_name(self):
+        return self.line_edit.text()
+
 
 class Window(QMainWindow):
     class Modes(Enum):
@@ -82,6 +121,10 @@ class Window(QMainWindow):
             ("Сохранить", self.graph_area.save),
             ("Открыть", self.graph_area.load),
             ("PC-многочлен", self.graph_area.count_pc_polynomial),
+            (
+                "Critical configuration многочлен",
+                self.graph_area.count_pc_polynomial,
+            ),
         ]
 
         for title, cur_action in commands:
@@ -95,30 +138,6 @@ class Window(QMainWindow):
         else:
             self.mode = None
         self.graph_area.on_mode_update(mode)
-
-
-class Node:
-    def __init__(self, x: float, y: float, name: str):
-        self.x = x
-        self.y = y
-        self.name = name
-
-    def get_node_string(self):
-        return f"{self.x} {self.y} {self.name}"
-
-    @staticmethod
-    def from_string(string: str):
-        x, y, name = string.split()
-        return Node(float(x), float(y), name)
-
-
-class Edge:
-    def __init__(self, node1: Node, node2: Node):
-        self.node1 = node1
-        self.node2 = node2
-
-    def get_edge_string(self):
-        return f"{self.node1.name} {self.node2.name}"
 
 
 class GraphArea(QFrame):
@@ -213,9 +232,7 @@ class GraphArea(QFrame):
     def delete_node(self, node: Node):
         self.nodes.remove(node)
         self.edges = list(
-            filter(
-                lambda x: x.node1 != node and x.node2 != node, self.edges
-            )
+            filter(lambda x: x.node1 != node and x.node2 != node, self.edges)
         )
 
     def get_vacant_node_name(self) -> str:
@@ -387,7 +404,7 @@ class GraphArea(QFrame):
                 graph_utils.Edge(
                     node_name_to_index[edge.node1.name],
                     node_name_to_index[edge.node2.name],
-                    t
+                    t,
                 )
             )
         return n, m, g
@@ -395,80 +412,3 @@ class GraphArea(QFrame):
     def count_pc_polynomial(self):
         polynomial_window = PolynomialShowWindow(self)
         polynomial_window.show()
-
-
-class PolynomialShowWindow(QMainWindow):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.initUI()
-
-    def initUI(self):
-        self.setWindowTitle("Polynomial")
-        self.setGeometry(300, 300, 300, 200)
-
-        self.text_edit = QTextEdit(self)
-        self.text_edit.setGeometry(10, 10, 280, 100)
-        # button for start calculation
-        self.button = QPushButton("Calculate", self)
-        self.button.move(20, 120)
-        self.button.clicked.connect(self.calculate)
-
-        self.show()
-
-    def calculate(self):
-        n, m, g = self.parent().get_graph()
-        thread = AThread(self, pc_polynomial.build, n, m, g)
-        thread.finished.connect(lambda : self.show_polynomial(thread.result))
-        thread.start()
-
-    def show_polynomial(self, polynomial):
-        self.text_edit.setText(str(polynomial))
-
-
-class AThread(QThread):
-    def __init__(self, parent=None, function: Callable = None, *args, **kwargs):
-        super().__init__(parent)
-        self.function = function
-        self.args = args
-        self.kwargs = kwargs
-        self.result = None
-
-    def run(self):
-        self.result = self.function(*self.args, **self.kwargs)
-
-
-class ChangeNodeIdDialog(QDialog):
-    def __init__(self, parent, node_name):
-        super().__init__(parent)
-
-        self.setWindowTitle("Изменить номер вершины")
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("Enter new node id:"))
-        line_edit = QLineEdit()
-        if node_name is not None:
-            line_edit.setText(str(node_name))
-
-        layout.addWidget(line_edit)
-        button_box = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        )
-        layout.addWidget(button_box)
-        self.setLayout(layout)
-
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
-
-        line_edit.returnPressed.connect(self.accept)
-
-        self.setModal(True)
-
-        self.line_edit = line_edit
-
-    def accept(self):
-        self.done(QDialog.Accepted)
-
-    def reject(self):
-        self.done(QDialog.Rejected)
-
-    def get_node_name(self):
-        return self.line_edit.text()

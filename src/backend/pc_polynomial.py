@@ -111,7 +111,7 @@ def build(n, m, g):
     l = sympy.Symbol("lambda")
     ws = [sympy.Symbol(f"w_{i}") for i in range(1, m + 2)]
     Rks = [build_rk(i, l, ws[:i]) for i in range(m + 1)]
-    print("ok")
+
     R1 = sympy.S.Zero
     for sub_g in get_all_subg(g, s):
         ts2 = [edges[0].t * 2 for eid, edges in sub_g.edges.items()]
@@ -160,3 +160,16 @@ def build(n, m, g):
     R2 = sympy.simplify(R2)
     N = sympy.simplify(sympy.Poly(R1, T) + sympy.Poly(R2, T))
     return N
+
+
+def prepare_for_showing(polynomial: sympy.Poly):
+    new_poly = polynomial.copy()
+    for v in polynomial.free_symbols:
+        if v.name != "T":
+            new_poly = new_poly.subs(v, 1)
+
+    return str(new_poly.as_expr())
+
+
+def prepare_for_saving(polynomial: sympy.Poly):
+    return str(polynomial.as_expr())

@@ -86,6 +86,7 @@ class Graph:
             G.add_edge(edge.begin, edge.end, eid=edge.eid)
         return G
 
+
 def get_symbols(num_edges: int):
     return [sympy.Symbol(f"t_{i}") for i in range(num_edges)]
 
@@ -105,7 +106,6 @@ def get_bamboo_len_2():
     ts = get_symbols(m)
     g.add_edge(Edge(0, 1, ts[0]))
     g.add_edge(Edge(1, 2, ts[1]))
-    print(g)
     return n, m, g
 
 
