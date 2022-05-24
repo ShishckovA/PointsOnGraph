@@ -162,6 +162,10 @@ class Window(QMainWindow):
                 "Critical configuration многочлен",
                 self.graph_area.count_pc_polynomial,
             ),
+            (
+                "Многочлен Эрхарта",
+                self.graph_area.count_pc_polynomial,
+            ),
         ]
 
         for title, cur_action in commands:
