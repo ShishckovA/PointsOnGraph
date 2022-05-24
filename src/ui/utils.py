@@ -19,12 +19,16 @@ class Node:
 
 
 class Edge:
-    def __init__(self, node1: Node, node2: Node):
+    def __init__(self, node1: Node, node2: Node, name: str):
         self.node1 = node1
         self.node2 = node2
+        self.name = name
 
     def get_edge_string(self):
-        return f"{self.node1.name} {self.node2.name}"
+        return f"{self.node1.name} {self.node2.name} {self.name}"
+
+    def __eq__(self, other):
+        return id(self) == id(other)
 
 
 class AThread(QThread):

@@ -28,9 +28,9 @@ class ChangeNodeIdDialog(QDialog):
     def __init__(self, parent, node_name):
         super().__init__(parent)
 
-        self.setWindowTitle("Изменить номер вершины")
+        self.setWindowTitle("Изменить имя вершины")
         layout = QVBoxLayout()
-        layout.addWidget(QLabel("Enter new node id:"))
+        layout.addWidget(QLabel("Введите новое имя вершины:"))
         line_edit = QLineEdit()
         if node_name is not None:
             line_edit.setText(str(node_name))
@@ -58,6 +58,43 @@ class ChangeNodeIdDialog(QDialog):
         self.done(QDialog.Rejected)
 
     def get_node_name(self):
+        return self.line_edit.text()
+
+
+class ChangeEdgeIdDialog(QDialog):
+    def __init__(self, parent, edge_name):
+        super().__init__(parent)
+
+        self.setWindowTitle("Изменить имя ребра")
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Введите новое имя ребра"))
+        line_edit = QLineEdit()
+        if edge_name is not None:
+            line_edit.setText(str(edge_name))
+
+        layout.addWidget(line_edit)
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        line_edit.returnPressed.connect(self.accept)
+
+        self.setModal(True)
+
+        self.line_edit = line_edit
+
+    def accept(self):
+        self.done(QDialog.Accepted)
+
+    def reject(self):
+        self.done(QDialog.Rejected)
+
+    def get_edge_name(self):
         return self.line_edit.text()
 
 
@@ -154,8 +191,6 @@ class GraphArea(QFrame):
         self.last_pos = QPoint()
         self.setFocusPolicy(Qt.StrongFocus)
 
-        self.file_name = "graph.txt"
-
     @staticmethod
     def node_radius() -> float:
         return GraphArea.NODE_RADIUS
@@ -192,6 +227,27 @@ class GraphArea(QFrame):
             int(edge.node1.y * self.height()),
             int(edge.node2.x * self.width()),
             int(edge.node2.y * self.height()),
+        )
+
+        painter.setPen(QPen(QColor(Qt.black), 1, Qt.SolidLine))
+        posx = (edge.node1.x + edge.node2.x) / 2
+        posy = (edge.node1.y + edge.node2.y) / 2
+        name = f"e_{edge.name}"
+        width = len(name) * 10
+        painter.setBrush(QBrush(QColor(Qt.white)))
+        painter.drawRect(
+            int(posx * self.width() - width // 2),
+            int(posy * self.height() - 10),
+            width,
+            20,
+        )
+        painter.drawText(
+            int(posx * self.width() - width // 2),
+            int(posy * self.height() - 10),
+            width,
+            20,
+            Qt.AlignCenter,
+            name,
         )
         self.update()
 
@@ -242,6 +298,13 @@ class GraphArea(QFrame):
             i += 1
         return str(i)
 
+    def get_vacant_edge_name(self) -> str:
+        names = [edge.name for edge in self.edges]
+        i = 0
+        while str(i) in names:
+            i += 1
+        return str(i)
+
     def add_node(self, x: float, y: float, name: Optional[str] = None) -> Node:
         if name is None:
             name = self.get_vacant_node_name()
@@ -249,8 +312,10 @@ class GraphArea(QFrame):
         self.nodes.append(node)
         return node
 
-    def add_edge(self, node1: Node, node2: Node) -> Edge:
-        edge = Edge(node1, node2)
+    def add_edge(self, node1: Node, node2: Node, name: Optional[str] = None) -> Edge:
+        if name is None:
+            name = self.get_vacant_edge_name()
+        edge = Edge(node1, node2, name)
         self.edges.append(edge)
         return edge
 
@@ -297,6 +362,14 @@ class GraphArea(QFrame):
             if other_node.name == name:
                 other_node.name = self.get_vacant_node_name()
 
+    def rename_edge(self, edge: Edge, name: str):
+        edge.name = name
+        for other_edge in self.edges:
+            if edge == other_edge:
+                continue
+            if other_edge.name == name:
+                other_edge.name = self.get_vacant_edge_name()
+
     def pressed_right_button(self, event: QMouseEvent):
         for node in self.nodes:
             if self.clicked_on_node(node, event):
@@ -305,7 +378,16 @@ class GraphArea(QFrame):
                 if result == QDialog.Accepted:
                     new_name = dialog.get_node_name()
                     self.rename_node(node, new_name)
-                    return
+                return
+
+        for edge in self.edges:
+            if self.clicked_on_edge(edge, event):
+                dialog = ChangeEdgeIdDialog(self, edge.name)
+                result = dialog.exec_()
+                if result == QDialog.Accepted:
+                    new_name = dialog.get_edge_name()
+                    self.rename_edge(edge, new_name)
+                return
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.LeftButton:
@@ -380,14 +462,14 @@ class GraphArea(QFrame):
                     node = Node.from_string(lines[i])
                     self.nodes.append(node)
                 for i in range(num_nodes + 1, num_nodes + num_edges + 1):
-                    source, target = map(str, lines[i].split())
+                    source, target, name = map(str, lines[i].split())
                     source_node = next(
                         node for node in self.nodes if node.name == source
                     )
                     target_node = next(
                         node for node in self.nodes if node.name == target
                     )
-                    self.edges.append(Edge(source_node, target_node))
+                    self.edges.append(Edge(source_node, target_node, name))
             self.update()
 
     def get_graph(self):
