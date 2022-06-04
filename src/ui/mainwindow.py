@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
+from typing import Optional, Callable
 
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QColor, QPen, QBrush, QPainter, QMouseEvent
@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (
     QDialogButtonBox,
 )
 
-from backend import graph_utils
+from backend import graph_utils, pc_polynomial, critical, ehrhart
 from ui.polynomial_show import PolynomialShowWindow
 from ui.utils import Node, Edge
 
@@ -157,14 +157,26 @@ class Window(QMainWindow):
             ("Очистить", self.graph_area.clear),
             ("Сохранить", self.graph_area.save),
             ("Открыть", self.graph_area.load),
-            ("PC-многочлен", self.graph_area.count_pc_polynomial),
+            (
+                "PC-многочлен",
+                lambda: self.graph_area.count_polynomial(
+                    "PC-многочлен",
+                    pc_polynomial.build
+                )
+            ),
             (
                 "Critical configuration многочлен",
-                self.graph_area.count_pc_polynomial,
+                lambda: self.graph_area.count_polynomial(
+                    "Critical configuration многочлен",
+                    critical.build
+                ),
             ),
             (
                 "Многочлен Эрхарта",
-                self.graph_area.count_pc_polynomial,
+                lambda: self.graph_area.count_polynomial(
+                    "Многочлен Эрхарта",
+                    ehrhart.build
+                ),
             ),
         ]
 
@@ -495,6 +507,6 @@ class GraphArea(QFrame):
             )
         return n, m, g
 
-    def count_pc_polynomial(self):
-        polynomial_window = PolynomialShowWindow(self)
+    def count_polynomial(self, name: str, counting_function: Callable):
+        polynomial_window = PolynomialShowWindow(self, name, counting_function)
         polynomial_window.show()

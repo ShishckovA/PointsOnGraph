@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
 from itertools import chain, combinations
 
 from backend.graph_utils import Edge, Graph
