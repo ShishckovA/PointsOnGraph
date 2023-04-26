@@ -4,7 +4,7 @@ from typing import Union
 import sympy as sym
 from sympy import bernoulli
 
-from out import pre_calc
+from pre_calc import pre_calc
 
 
 def td(s: int, ws: list[Union[float, int, sym.Symbol]]):
